@@ -1,6 +1,6 @@
-# 📄 .github/workflows/STEP Spatial Metadata Processor.yml
+# 📄 .github/workflows/uftk_ingester_sred.yml
 
-name: STEP Spatial Metadata Processor
+name: uftk_ingester_sred.yml
 
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
             git push || echo "No changes to push"
           )
   
-  process_step_for_coordinates:
+  uftk_ingester_sred:
     needs: code_quality_check
     runs-on: ubuntu-latest
     env:
@@ -56,9 +56,6 @@ jobs:
     steps:
       - name: 🛎️ Checkout repository
         uses: actions/checkout@v3
-        with:
-          # Token is needed for the final commit/push of logs/error reports
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🐍 Set up Python
         uses: actions/setup-python@v4
