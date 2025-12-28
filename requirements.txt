@@ -1,5 +1,7 @@
 pytest-cov>=4.1.0  # Used for measuring test coverage
 autoflake>=2.2.1   # Used for automatically removing unused imports and variables
 vulture>=2.9       # Used for finding and reporting dead code
+dropbox             # Dropbox API integration for input/output
+
 
 
