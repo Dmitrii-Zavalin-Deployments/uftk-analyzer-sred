@@ -69,12 +69,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libglu1-mesa-dev \
-            libfreetype6-dev \
-            libfontconfig1-dev \
-            libxrender1 \
-            gmsh
-
+            
       - name: 🐍 Install Python dependencies
         run: |
           python -m pip install --upgrade pip
