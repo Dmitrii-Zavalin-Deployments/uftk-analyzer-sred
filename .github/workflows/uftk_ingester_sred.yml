@@ -1,0 +1,119 @@
+# 📄 .github/workflows/STEP Spatial Metadata Processor.yml
+
+name: STEP Spatial Metadata Processor
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+jobs:
+  code_quality_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 🐍 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🧹 Run autoflake to remove unused imports
+        run: |
+          autoflake --in-place --recursive --remove-unused-variables --remove-all-unused-imports src
+
+      - name: 💀 Run vulture to find dead code
+        run: |
+          vulture src || echo "⚠️ Vulture found unused code — review manually if needed"
+
+      - name: 🚀 Commit autoflake changes
+        env:
+          GIT_USER_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_USER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
+        run: |
+          git config --global user.name "${GIT_USER_NAME}"
+          git config --global user.email "${GIT_USER_EMAIL}"
+          git add .
+          git diff --cached --quiet || (
+            git commit -m "🧹 Auto-clean: removed unused imports and variables"
+            git push || echo "No changes to push"
+          )
+  
+  process_step_for_coordinates:
+    needs: code_quality_check
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      ENABLE_RULE_DEBUG: true
+
+    steps:
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v3
+        with:
+          # Token is needed for the final commit/push of logs/error reports
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: 🧱 Install system dependencies & Gmsh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libglu1-mesa-dev \
+            libfreetype6-dev \
+            libfontconfig1-dev \
+            libxrender1 \
+            gmsh
+
+      - name: 🐍 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: ☁️ Download & normalize STEP file
+        env:
+          APP_KEY: ${{ secrets.APP_KEY }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+        run: |
+          chmod +x src/download_from_dropbox.sh
+          src/download_from_dropbox.sh
+
+      - name: ☁️ Upload outputs to Dropbox
+        env:
+          APP_KEY: ${{ secrets.APP_KEY }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+        run: |
+          chmod +x src/upload_to_dropbox.sh
+          src/upload_to_dropbox.sh
+
+      - name: 📝 Log trigger & push
+        if: always() # Run even if previous steps failed to ensure log and error reports are committed
+        env:
+          GIT_USER_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_USER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
+        run: |
+          echo "$(date '+%Y-%m-%d %H:%M:%S'): STEP processor triggered by '${{ github.actor }}' via '${{ github.event_name }}' event" >> trigger.txt
+          git config --global user.name "${GIT_USER_NAME}"
+          git config --global user.email "${GIT_USER_EMAIL}"
+
+          git add trigger.txt
+          git commit -m "Log STEP processor trigger by ${{ github.actor }} via ${{ github.event_name }}" || echo "No new log or errors to commit"
+
+          # Pull and rebase before pushing to avoid rejection
+          git pull --rebase origin main || echo "⚠️ Rebase failed — check for conflicts"
+          git push origin main || echo "❌ Push failed — remote may have diverged"
+
+
+
