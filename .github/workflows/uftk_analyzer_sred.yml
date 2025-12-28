@@ -1,6 +1,6 @@
-# 📄 .github/workflows/uftk_ingester_sred.yml
+# 📄 .github/workflows/uftk_analyzer_sred.yml
 
-name: uftk_ingester_sred.yml
+name: uftk_analyzer_sred.yml
 
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
             git push || echo "No changes to push"
           )
   
-  uftk_ingester_sred:
+  uftk_analyzer_sred:
     needs: code_quality_check
     runs-on: ubuntu-latest
     env:
