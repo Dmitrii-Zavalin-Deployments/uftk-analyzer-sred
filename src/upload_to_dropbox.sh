@@ -3,7 +3,7 @@
 APP_KEY="${APP_KEY}"
 APP_SECRET="${APP_SECRET}"
 REFRESH_TOKEN="${REFRESH_TOKEN}"
-DROPBOX_UPLOAD_FOLDER="/engineering_simulations_pipeline"
+DROPBOX_UPLOAD_FOLDER="/UniversalFieldToolkit"
 
 LOCAL_OUTPUT_DIR="$GITHUB_WORKSPACE/data/testing-input-output"
 
