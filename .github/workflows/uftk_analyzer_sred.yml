@@ -70,6 +70,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: 🧪 Run Unit Tests with Coverage
+        run: |
+          echo "🔍 Running all unit tests with pytest and coverage..."
+          PYTHONPATH=src pytest tests/ --verbose --cov=src --cov-report=term-missing
+          echo "✅ Unit tests and code coverage check completed."
+
       - name: ☁️ Download input files from Dropbox
         env:
           APP_KEY: ${{ secrets.APP_KEY }}
