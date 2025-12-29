@@ -48,27 +48,33 @@ def test_load_image_missing_file_returns_none():
     assert img is None
 
 # ---------------------------------------------------------
-# Test enhance_image
+# Test enhance_image (updated)
 # ---------------------------------------------------------
 
 def test_enhance_image_changes_luminance():
-    img = np.full((50, 50, 3), 120, dtype=np.uint8)
+    # Use a non-uniform image so histogram equalization actually changes values
+    img = np.tile(np.arange(50, dtype=np.uint8), (50, 1))
+    img = np.stack([img, img, img], axis=2)  # Make it 3-channel BGR
+
     enhanced = enhance_image(img)
+
     assert enhanced is not None
     assert enhanced.shape == img.shape
-    assert not np.array_equal(img, enhanced)
+    assert not np.array_equal(img, enhanced)  # Now guaranteed to change
 
 # ---------------------------------------------------------
-# Test equalize_blue_channel
+# Test equalize_blue_channel (updated)
 # ---------------------------------------------------------
 
 def test_equalize_blue_channel_modifies_blue_only():
+    # Use non-uniform blue channel so equalization changes it
     img = np.zeros((50, 50, 3), dtype=np.uint8)
-    img[:, :, 0] = 50  # Blue channel
-    img[:, :, 1] = 100 # Green
-    img[:, :, 2] = 150 # Red
+    img[:, :, 0] = np.tile(np.arange(50, dtype=np.uint8), (50, 1))  # Blue gradient
+    img[:, :, 1] = 100  # Green constant
+    img[:, :, 2] = 150  # Red constant
 
     eq = equalize_blue_channel(img)
+
     assert eq.shape == img.shape
     assert not np.array_equal(eq[:, :, 0], img[:, :, 0])  # Blue changed
     assert np.array_equal(eq[:, :, 1], img[:, :, 1])      # Green unchanged
@@ -146,9 +152,7 @@ def test_classify_texture_smooth():
 # ---------------------------------------------------------
 
 def test_update_csv_updates_correct_row(tmp_path, monkeypatch):
-    # Setup working directory
-    test_dir = tmp_path
-    csv_path = test_dir / "field_data.csv"
+    csv_path = tmp_path / "field_data.csv"
 
     df = pd.DataFrame([{
         "Photo_Filename": "test_ingested.jpg",
@@ -163,7 +167,6 @@ def test_update_csv_updates_correct_row(tmp_path, monkeypatch):
     }])
     df.to_csv(csv_path, index=False)
 
-    # Patch global CSV_PATH
     monkeypatch.setattr("universal_field_toolkit_analyzer_sred.CSV_PATH", str(csv_path))
 
     features = {
@@ -205,26 +208,20 @@ def test_update_csv_missing_row(tmp_path, monkeypatch, capsys):
 # ---------------------------------------------------------
 
 def test_process_photo_creates_outputs(tmp_path, monkeypatch):
-    # Setup working dir
     monkeypatch.setattr("universal_field_toolkit_analyzer_sred.WORKING_DIR", str(tmp_path))
     monkeypatch.setattr("universal_field_toolkit_analyzer_sred.CSV_PATH", str(tmp_path / "field_data.csv"))
 
-    # Create CSV
     df = pd.DataFrame([{"Photo_Filename": "sample_ingested.jpg"}])
     df.to_csv(tmp_path / "field_data.csv", index=False)
 
-    # Create test image
     img_path = tmp_path / "sample_ingested.jpg"
     create_test_image(str(img_path))
 
-    # Run
     process_photo(str(img_path))
 
-    # Check outputs
     assert os.path.isfile(tmp_path / "sample_analyzed.jpg")
     assert os.path.isfile(tmp_path / "sample_enhanced.jpg")
 
-    # Check CSV updated
     updated = pd.read_csv(tmp_path / "field_data.csv")
     assert "Brightness" in updated.columns
     assert updated.loc[0, "Brightness"] > 0
