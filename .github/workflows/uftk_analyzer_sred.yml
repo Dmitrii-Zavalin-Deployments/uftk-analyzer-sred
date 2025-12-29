@@ -85,6 +85,10 @@ jobs:
           chmod +x src/download_from_dropbox.sh
           src/download_from_dropbox.sh
 
+      - name: 📁 Ensure working directory exists
+        run: |
+          mkdir -p /data/testing-input-output
+
       - name: 🔧 Run Universal Field Toolkit Analyzer
         run: |
           python3 src/universal_field_toolkit_analyzer_sred.py
