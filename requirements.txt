@@ -3,6 +3,8 @@ autoflake>=2.2.1
 vulture>=2.9
 dropbox
 opencv-python-headless
+pandas
+numpy
 
 
 
