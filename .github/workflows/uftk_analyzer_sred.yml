@@ -50,6 +50,7 @@ jobs:
     env:
       PYTHONPATH: ${{ github.workspace }}
       ENABLE_RULE_DEBUG: true
+      WORKING_DIR: ${{ github.workspace }}/data/testing-input-output
 
     steps:
       - name: 🛎️ Checkout repository
@@ -76,6 +77,10 @@ jobs:
           PYTHONPATH=src pytest tests/ --verbose --cov=src --cov-report=term-missing
           echo "✅ Unit tests and code coverage check completed."
 
+      - name: 📁 Ensure working directory exists
+        run: |
+          mkdir -p "$WORKING_DIR"
+
       - name: ☁️ Download input files from Dropbox
         env:
           APP_KEY: ${{ secrets.APP_KEY }}
@@ -84,10 +89,6 @@ jobs:
         run: |
           chmod +x src/download_from_dropbox.sh
           src/download_from_dropbox.sh
-
-      - name: 📁 Ensure working directory exists
-        run: |
-          mkdir -p /data/testing-input-output
 
       - name: 🔧 Run Universal Field Toolkit Analyzer
         run: |
@@ -118,6 +119,5 @@ jobs:
 
           git pull --rebase origin main || echo "⚠️ Rebase failed — check for conflicts"
           git push origin main || echo "❌ Push failed — remote may have diverged"
-
 
 
