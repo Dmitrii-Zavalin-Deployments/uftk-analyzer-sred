@@ -117,7 +117,7 @@ jobs:
           git add trigger.txt
           git commit -m "Log Analyzer trigger by ${{ github.actor }} via ${{ github.event_name }}" || echo "No new log or errors to commit"
 
-          git pull --rebase origin main || echo "⚠️ Rebase failed — check for conflicts"
+          # Removed rebase step — it caused failures
           git push origin main || echo "❌ Push failed — remote may have diverged"
 
 
