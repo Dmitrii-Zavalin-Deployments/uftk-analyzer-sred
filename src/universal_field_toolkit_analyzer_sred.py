@@ -4,11 +4,14 @@ import numpy as np
 import pandas as pd
 
 # ---------------------------------------------------------
-# Unified working directory
+# Unified working directory (GitHub‑safe)
 # ---------------------------------------------------------
 
-WORKING_DIR = "/data/testing-input-output"
+WORKING_DIR = os.environ.get("WORKING_DIR", "data/testing-input-output")
 CSV_PATH = os.path.join(WORKING_DIR, "field_data.csv")
+
+# Ensure directory exists
+os.makedirs(WORKING_DIR, exist_ok=True)
 
 # ---------------------------------------------------------
 # Image processing helpers
@@ -65,7 +68,6 @@ def update_csv(photo_filename, features):
 
     df = pd.read_csv(CSV_PATH)
 
-    # Match row by ingested filename
     row_index = df.index[df["Photo_Filename"] == photo_filename].tolist()
     if not row_index:
         print(f"⚠️ No matching CSV row for {photo_filename}")
@@ -73,7 +75,6 @@ def update_csv(photo_filename, features):
 
     idx = row_index[0]
 
-    # Add analyzer fields
     df.loc[idx, "Brightness"] = features["brightness"]
     df.loc[idx, "Mean_R"] = features["mean_r"]
     df.loc[idx, "Mean_G"] = features["mean_g"]
@@ -104,7 +105,6 @@ def process_photo(photo_path):
     enhanced = enhance_image(img)
     enhanced = equalize_blue_channel(enhanced)
 
-    # Extract features
     features = {}
     features["brightness"] = extract_brightness(enhanced)
     features.update(extract_color_metrics(enhanced))
@@ -113,11 +113,9 @@ def process_photo(photo_path):
     features["shadow_intensity"] = extract_shadow_intensity(enhanced)
     features["texture_class"] = classify_texture(features)
 
-    # Save outputs
     cv2.imwrite(analyzed_path, img)
     cv2.imwrite(enhanced_path, enhanced)
 
-    # Update CSV
     update_csv(base, features)
 
     print(f"✓ Analyzed: {photo_path}")
@@ -125,12 +123,15 @@ def process_photo(photo_path):
     print(f"  → {enhanced_name}")
 
 def main():
-    # Process all *_ingested.jpg files
+    if not os.path.isdir(WORKING_DIR):
+        print(f"❌ WORKING_DIR does not exist: {WORKING_DIR}")
+        return
+
     for filename in os.listdir(WORKING_DIR):
         if filename.endswith("_ingested.jpg"):
             process_photo(os.path.join(WORKING_DIR, filename))
 
-    print("🎉 Analyzer complete. Outputs written to /data/testing-input-output")
+    print(f"🎉 Analyzer complete. Outputs written to {WORKING_DIR}")
 
 if __name__ == "__main__":
     main()
