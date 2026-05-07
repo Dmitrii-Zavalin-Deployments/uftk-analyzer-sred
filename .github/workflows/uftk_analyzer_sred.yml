@@ -13,6 +13,13 @@ jobs:
       - name: 🛎️ Checkout repository
         uses: actions/checkout@v3
 
+      # 🔧 GLOBAL ROBOT IDENTITY + NOTES INITIALIZATION
+      - name: 🤖 Initialize Robot Identity & Notes
+        run: |
+          git config --global user.name "Automation Engine"
+          git config --global user.email "automation@yourdomain"
+          git config --global notes.rewriteRef "refs/notes/*"
+
       - name: 🐍 Set up Python
         uses: actions/setup-python@v4
         with:
@@ -32,17 +39,16 @@ jobs:
           vulture src || echo "⚠️ Vulture found unused code — review manually if needed"
 
       - name: 🚀 Commit autoflake changes
-        env:
-          GIT_USER_NAME: ${{ secrets.GIT_USER_NAME }}
-          GIT_USER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
         run: |
-          git config --global user.name "${GIT_USER_NAME}"
-          git config --global user.email "${GIT_USER_EMAIL}"
           git add .
-          git diff --cached --quiet || (
-            git commit -m "🧹 Auto-clean: removed unused imports and variables"
-            git push || echo "No changes to push"
-          )
+          if ! git diff --cached --quiet; then
+            git commit -m "🤖 robot: auto-clean unused imports & variables"
+            git notes add -m "robot: true"
+            git push origin HEAD
+            git push origin refs/notes/* || true
+          else
+            echo "No autoflake changes to commit."
+          fi
 
   uftk_analyzer_sred:
     needs: code_quality_check
@@ -55,6 +61,13 @@ jobs:
     steps:
       - name: 🛎️ Checkout repository
         uses: actions/checkout@v3
+
+      # 🔧 GLOBAL ROBOT IDENTITY + NOTES INITIALIZATION
+      - name: 🤖 Initialize Robot Identity & Notes
+        run: |
+          git config --global user.name "Automation Engine"
+          git config --global user.email "automation@yourdomain"
+          git config --global notes.rewriteRef "refs/notes/*"
 
       - name: 🐍 Set up Python
         uses: actions/setup-python@v4
@@ -78,8 +91,7 @@ jobs:
           echo "✅ Unit tests and code coverage check completed."
 
       - name: 📁 Ensure working directory exists
-        run: |
-          mkdir -p "$WORKING_DIR"
+        run: mkdir -p "$WORKING_DIR"
 
       - name: ☁️ Download input files from Dropbox
         env:
@@ -91,8 +103,7 @@ jobs:
           src/download_from_dropbox.sh
 
       - name: 🔧 Run Universal Field Toolkit Analyzer
-        run: |
-          python3 src/universal_field_toolkit_analyzer_sred.py
+        run: python3 src/universal_field_toolkit_analyzer_sred.py
 
       - name: ☁️ Upload outputs to Dropbox
         env:
@@ -105,19 +116,16 @@ jobs:
 
       - name: 📝 Log trigger & push
         if: always()
-        env:
-          GIT_USER_NAME: ${{ secrets.GIT_USER_NAME }}
-          GIT_USER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
         run: |
           echo "$(date '+%Y-%m-%d %H:%M:%S'): Analyzer triggered by '${{ github.actor }}' via '${{ github.event_name }}'" >> trigger.txt
 
-          git config --global user.name "${GIT_USER_NAME}"
-          git config --global user.email "${GIT_USER_EMAIL}"
-
           git add trigger.txt
-          git commit -m "Log Analyzer trigger by ${{ github.actor }} via ${{ github.event_name }}" || echo "No new log or errors to commit"
 
-          # Removed rebase step — it caused failures
-          git push origin main || echo "❌ Push failed — remote may have diverged"
-
-
+          if ! git diff --cached --quiet; then
+            git commit -m "🤖 robot: Analyzer trigger log"
+            git notes add -m "robot: true"
+            git push origin main
+            git push origin refs/notes/* || true
+          else
+            echo "No new logs or errors to commit."
+          fi
